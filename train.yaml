@@ -1,0 +1,17 @@
+path: ./  # dataset root dir
+train: photos/train/correctphotos  # train images (relative to 'path') 128 images
+val: photos/train/correctphotos  # val images (relative to 'path') 128 images
+test:  # test images (optional)
+
+names:
+ 
+ 0: Motor
+ 1: Parafuso direito do motor
+ 2: Parafuso esquerdo do motor
+ 3: Haste de Resistencia
+ 4: Chave do ar frio
+ 5: Chave de temperatura
+ 6: Chave liga/desliga
+ 7: Terminal de soldagem
+ 8: Presilha
+ 9: Luva do cabo
