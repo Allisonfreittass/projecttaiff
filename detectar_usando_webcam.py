@@ -3,35 +3,38 @@ import numpy as np
 from collections import defaultdict
 from ultralytics import YOLO
 import tkinter as tk
-from tkinter import font, filedialog
+from tkinter import font, filedialog, Toplevel
 from PIL import Image, ImageTk
 
 class CameraApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Controle de Qualidade TAIFF")
-        self.root.configure(bg="#6d28d9")
+        self.root.configure(bg="#282a36")
 
         self.title_font = font.Font(family="Helvetica", size=28, weight="bold")
         self.title_label = tk.Label(
             root,
             text="Controle de Qualidade TAIFF",
             font=self.title_font,
-            bg="#4b2c77",
+            bg="#44475a",
             fg="white",
             padx=20,
-            pady=10
+            pady=10,
+            relief="groove"
         )
         self.title_label.pack(pady=(20, 10))
 
-        self.button_frame = tk.Frame(root, bg="#6d28d9")
+        self.button_frame = tk.Frame(root, bg="#282a36")
         self.button_frame.pack(pady=10)
 
         button_style = {
-            'bg': 'white',
-            'fg': '#6d28d9',
+            'bg': '#6272a4',
+            'fg': 'white',
             'font': ('Helvetica', 12),
-            'width': 12
+            'width': 12,
+            'relief': 'flat',
+            'bd': 2
         }
 
         self.toggle_camera_button = tk.Button(
@@ -40,8 +43,7 @@ class CameraApp:
             command=self.toggle_camera,
             **button_style
         )
-        self.toggle_camera_button.pack(side=tk.LEFT, padx=5)
-        self.toggle_camera_button.bind("<Button-1>", lambda e: self.toggle_camera_button.config(fg='#6d28d9'))
+        self.toggle_camera_button.pack(side=tk.LEFT, padx=10, pady=5)
 
         self.toggle_photo_button = tk.Button(
             self.button_frame,
@@ -49,8 +51,16 @@ class CameraApp:
             command=self.toggle_photo,
             **button_style
         )
-        self.toggle_photo_button.pack(side=tk.LEFT, padx=5)
-        self.toggle_photo_button.bind("<Button-1>", lambda e: self.toggle_photo_button.config(fg='#6d28d9'))
+        self.toggle_photo_button.pack(side=tk.LEFT, padx=10, pady=5)
+
+        self.expand_photo_button = tk.Button(
+            self.button_frame,
+            text="Expandir Foto",
+            command=self.expand_photo,
+            state=tk.DISABLED,
+            **button_style
+        )
+        self.expand_photo_button.pack(side=tk.LEFT, padx=10, pady=5)
 
         self.canvas_width = 960
         self.canvas_height = 720
@@ -58,9 +68,10 @@ class CameraApp:
             root,
             width=self.canvas_width,
             height=self.canvas_height,
-            bg="black"
+            bg="black",
+            highlightthickness=0
         )
-        self.canvas.pack(pady=(10, 20))
+        self.canvas.pack(pady=(10, 20), padx=20)
 
         self.model = YOLO("runs/detect/train6/weights/best.pt")
         self.track_history = defaultdict(list)
@@ -70,24 +81,57 @@ class CameraApp:
         self.photo_active = False
         self.update_task = None
         self.imgtk = None
+        self.uploaded_img = None
+        self.processed_img = None  
 
     def toggle_camera(self):
         if self.camera_active:
             self.stop_camera()
-            self.toggle_camera_button.config(text="Ativar Câmera")
+            self.toggle_camera_button.config(text="Ativar Câmera", bg="#6272a4")
             self.canvas.config(bg="black")
         else:
             self.start_camera()
-            self.toggle_camera_button.config(text="Desativar Câmera")
-            self.canvas.config(bg="#6d28d9")
+            self.toggle_camera_button.config(text="Desativar Câmera", bg="#50fa7b")
+            self.canvas.config(bg="#282a36")
 
     def toggle_photo(self):
         if self.photo_active:
             self.close_photo()
-            self.toggle_photo_button.config(text="Adicionar Foto")
+            self.toggle_photo_button.config(text="Adicionar Foto", bg="#6272a4")
         else:
             self.upload_photo()
-            self.toggle_photo_button.config(text="Remover Foto")
+            self.toggle_photo_button.config(text="Remover Foto", bg="#ff5555")
+
+    def expand_photo(self):
+        if self.processed_img is not None:  
+            top = Toplevel(self.root)
+            top.attributes('-fullscreen', True) 
+            top.title("Imagem em Tela Cheia")
+
+            screen_width = top.winfo_screenwidth()
+            screen_height = top.winfo_screenheight()
+
+            img = cv2.cvtColor(self.processed_img, cv2.COLOR_BGR2RGB)
+
+            height, width, _ = img.shape
+            aspect_ratio = width / height
+
+            if aspect_ratio > (screen_width / screen_height):
+                new_width = screen_width
+                new_height = int(new_width / aspect_ratio)
+            else:
+                new_height = screen_height
+                new_width = int(new_height * aspect_ratio)
+
+            img = cv2.resize(img, (new_width, new_height))
+            img = Image.fromarray(img)
+            imgtk = ImageTk.PhotoImage(image=img)
+
+            img_label = tk.Label(top, image=imgtk)
+            img_label.image = imgtk
+            img_label.pack()
+
+            top.bind("<Escape>", lambda e: top.destroy())  
 
     def start_camera(self):
         if not self.camera_active:
@@ -163,20 +207,23 @@ class CameraApp:
     def upload_photo(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.jpeg;*.png")])
         if file_path:
-            img = cv2.imread(file_path)
-            img = cv2.resize(img, (960, 720))
+            self.uploaded_img = cv2.imread(file_path)
+            img = cv2.resize(self.uploaded_img, (960, 720))
             results = self.model(img)
-            img = results[0].plot()
+            img = results[0].plot() 
+            self.processed_img = img  
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(img)
             imgtk = ImageTk.PhotoImage(image=img)
             self.canvas.create_image(0, 0, anchor=tk.NW, image=imgtk)
             self.root.imgtk = imgtk
             self.photo_active = True
+            self.expand_photo_button.config(state=tk.NORMAL)
 
     def close_photo(self):
         self.canvas.delete("all")
         self.photo_active = False
+        self.expand_photo_button.config(state=tk.DISABLED)
 
     def on_closing(self):
         self.stop_camera()
