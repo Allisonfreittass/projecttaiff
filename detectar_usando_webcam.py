@@ -3,8 +3,9 @@ import numpy as np
 from collections import defaultdict
 from ultralytics import YOLO
 import tkinter as tk
-from tkinter import font, filedialog, Toplevel
+from tkinter import font, filedialog, Toplevel  # Adicionei estas importações
 from PIL import Image, ImageTk
+
 
 class CameraApp:
     def __init__(self, root):

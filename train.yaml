@@ -1,6 +1,6 @@
-path: ./  # dataset root dir
-train: photos/train/correctphotos  # train images (relative to 'path') 128 images
-val: photos/train/correctphotos  # val images (relative to 'path') 128 images
+path: .\  # dataset root dir
+train: C:\Users\nioli\OneDrive\Documentos\GitHub\projecttaiff\datasets\photos/train/correctphotos  # train images (relative to 'path') 128 images
+val: C:\Users\nioli\OneDrive\Documentos\GitHub\projecttaiff\datasets\photos/train/correctphotos  # val images (relative to 'path') 128 images
 test:  # test images (optional)
 
 names:
